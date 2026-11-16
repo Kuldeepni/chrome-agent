@@ -1,0 +1,10 @@
+# MCP Python SDK. 2.x renamed FastMCP -> MCPServer
+# (mcp.server.mcpserver). The server code targets the 2.x API.
+mcp>=2.0.0
+
+# Playwright: the snapshot tool relies on page.aria_snapshot(mode="ai")
+# and page.get_by_ref(), both of which need a recent 1.5x release.
+playwright>=1.53.0
+
+# Reads the .env file next to server.py
+python-dotenv>=1.0.1

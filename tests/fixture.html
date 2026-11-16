@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>chrome-agent interaction fixture</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; }
+    .hidden { display: none; }
+    #greeting { color: #0a7; font-weight: 600; }
+    label { display: block; margin-top: 8px; }
+    input, select, textarea { padding: 4px; }
+    button { padding: 6px 12px; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Interaction Fixture</h1>
+  <p id="intro">This page exercises click, typing, selection, uploads and dialogs.</p>
+
+  <div class="hidden" id="secret-panel">Hidden content that must not appear in page text.</div>
+
+  <label for="name-field">Your name</label>
+  <input id="name-field" type="text" placeholder="Enter your name" />
+
+  <label for="color-field">Favorite color</label>
+  <select id="color-field">
+    <option value="red">Red</option>
+    <option value="green">Green</option>
+    <option value="blue">Blue</option>
+  </select>
+
+  <label for="notes-field">Notes</label>
+  <textarea id="notes-field" rows="3"></textarea>
+
+  <label for="file-field">Attachment</label>
+  <input id="file-field" type="file" />
+
+  <button id="greet-button" type="button">Greet Me</button>
+  <button id="dialog-button" type="button">Show Confirm</button>
+  <a id="some-link" href="https://example.com/other">Example Link</a>
+
+  <p id="greeting" hidden></p>
+
+  <script>
+    document.getElementById('greet-button').addEventListener('click', function () {
+      var name = document.getElementById('name-field').value;
+      var greeting = document.getElementById('greeting');
+      if (name) {
+        greeting.textContent = 'Hello, ' + name + '!';
+        greeting.hidden = false;
+      }
+    });
+
+    document.getElementById('dialog-button').addEventListener('click', function () {
+      if (window.confirm('Really proceed?')) {
+        document.getElementById('greeting').textContent = 'Confirmed';
+        document.getElementById('greeting').hidden = false;
+      }
+    });
+
+    document.getElementById('notes-field').addEventListener('change', function () {
+      document.getElementById('greeting').textContent = 'Notes saved';
+      document.getElementById('greeting').hidden = false;
+    });
+  </script>
+</body>
+</html>

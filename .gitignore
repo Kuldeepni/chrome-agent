@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Local configuration and secrets
+.env
+
+# Runtime output
+logs/
+downloads/
+chrome-profile/
+screenshots/
+.test-output-*.log
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
