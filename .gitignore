@@ -21,3 +21,6 @@ screenshots/
 .idea/
 .DS_Store
 Thumbs.db
+
+_test-output-*.txt
+_*.txt

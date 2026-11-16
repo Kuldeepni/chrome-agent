@@ -9,7 +9,7 @@ browser, no re-login.
 
 - **Server:** Python 3.11+, official `mcp` SDK (stdio transport), Playwright
 - **Platforms:** Windows 10/11 (tested) and macOS
-- **Tools:** 24 — navigation, tabs, page reading, interaction, downloads, and
+- **Tools:** 25 — navigation, tabs, page reading, interaction, downloads, and
   opt-in JavaScript
 
 > **Note on FastMCP:** in `mcp` SDK 2.x the `FastMCP` class was renamed to
@@ -224,6 +224,7 @@ All of them require Chrome to be running with debugging enabled.
 | `screenshot(full_page=False)` | Returns an image you can look at |
 | `get_links()` | Every link with its text and href |
 | `find_text(query)` | Search visible text, return matching sections |
+| `detect_blockers()` | Check for modals, paywalls, login forms, CAPTCHAs and error banners |
 
 ### Interaction
 | Tool | Purpose |
@@ -383,7 +384,16 @@ action was refused.
 **5. Download and inspect a file**
 
 > Go to example.com, find the PDF linked as "Sample document", download it, and
-> tell me what page 1 says. Save it into my Downloads folder.
+> tell me what page 1 says. Save it into my Downloads folder. Verify the
+> download actually happened with list_downloads() and take a screenshot if
+> anything looks off.
+
+**6. Verify before claiming done (recommended pattern)**
+
+> Open unsplash.com, search for "building", click the first free (non-premium)
+> image, download the "Free" version, and confirm the download appears in
+> list_downloads(). If a paywall or premium modal appears, stop and ask me
+> instead of clicking through. Take a screenshot of the final state.
 
 ---
 
