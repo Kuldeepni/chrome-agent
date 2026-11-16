@@ -176,13 +176,23 @@ class Session:
         return self._browser is not None and self._browser.is_connected()
 
     async def connect(self) -> Browser:
-        """Connect to the running Chrome over CDP, reusing the shared connection."""
+        """Connect to the running Chrome over CDP, reusing the shared connection.
+
+        If the browser has been closed (or the connection dropped), the stale
+        state is discarded and a fresh connection is attempted.
+        """
         if self.connected and self._browser is not None:
             return self._browser
+
+        # If we have stale state from a dead browser, drop it first.
+        if self._browser is not None and not self._browser.is_connected():
+            await self._disconnect()
 
         async with self._connect_lock:
             if self.connected and self._browser is not None:
                 return self._browser
+            if self._browser is not None and not self._browser.is_connected():
+                await self._disconnect()
 
             if self._playwright is None:
                 self._playwright = await async_playwright().start()
@@ -350,6 +360,17 @@ class Session:
         except Exception:
             return ""
 
+    async def _page_alive(self, page: Page) -> bool:
+        """Best-effort check that a page is still usable over CDP."""
+        if page is None or page.is_closed():
+            return False
+        try:
+            _ = page.url
+            await page.evaluate("() => true")
+            return True
+        except Exception:
+            return False
+
     async def current_page(self) -> Page:
         """Return the active tab, tracking tabs the user switches to manually.
 
@@ -366,9 +387,25 @@ class Session:
         await self.connect()
         assert self._context is not None
 
-        pages = [p for p in self._context.pages if not p.is_closed()]
+        # Filter out pages that are closed OR whose CDP target is gone.
+        alive = []
+        for p in self._context.pages:
+            if p.is_closed():
+                continue
+            if await self._page_alive(p):
+                alive.append(p)
+        pages = alive
         if not pages:
-            page = await self._context.new_page()
+            try:
+                page = await self._context.new_page()
+            except Exception:
+                # Context/browser may be gone; reconnect and retry once.
+                await self._disconnect()
+                await self.connect()
+                assert self._context is not None
+                pages = [p for p in self._context.pages if not p.is_closed() and await self._page_alive(p)]
+                if not pages:
+                    page = await self._context.new_page()
             self._bind_page(page)
             self._current_page = page
             self._pinned_focused = True
@@ -385,7 +422,7 @@ class Session:
 
         trusted = [p for p in pages if p in self._focus_ok]
         if not trusted:
-            if self._current_page is not None and not self._current_page.is_closed():
+            if self._current_page is not None and await self._page_alive(self._current_page):
                 return self._current_page
             self._current_page = pages[-1]
             return self._current_page
@@ -396,7 +433,7 @@ class Session:
         focused = [page for page, ok in zip(trusted, results) if ok is True]
 
         pinned = self._current_page
-        if pinned is None or pinned.is_closed():
+        if pinned is None or not await self._page_alive(pinned):
             self._current_page = focused[0] if focused else pages[-1]
             self._pinned_focused = bool(focused)
             return self._current_page
@@ -435,7 +472,14 @@ class Session:
         """Focus the tab at ``index`` and make it the current tab."""
         await self.connect()
         assert self._context is not None
-        pages = [p for p in self._context.pages if not p.is_closed()]
+        # Filter out pages that are closed OR whose CDP target is gone.
+        alive = []
+        for p in self._context.pages:
+            if p.is_closed():
+                continue
+            if await self._page_alive(p):
+                alive.append(p)
+        pages = alive
         if not pages:
             raise PageNotReady("There are no open tabs in Chrome.")
         if index < 0 or index >= len(pages):
@@ -471,7 +515,14 @@ class Session:
     async def close_tab(self, index: int) -> Page:
         await self.connect()
         assert self._context is not None
-        pages = [p for p in self._context.pages if not p.is_closed()]
+        # Filter out pages that are closed OR whose CDP target is gone.
+        alive = []
+        for p in self._context.pages:
+            if p.is_closed():
+                continue
+            if await self._page_alive(p):
+                alive.append(p)
+        pages = alive
         if index < 0 or index >= len(pages):
             raise PageNotFound(
                 f"Tab index {index} is out of range (0-{len(pages) - 1})."

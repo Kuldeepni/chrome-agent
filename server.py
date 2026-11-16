@@ -594,15 +594,17 @@ async def screenshot(full_page: bool = False) -> Image:
     use a screenshot when layout, images, or visual state matter.
     """
     AUDIT.record("screenshot", {"full_page": full_page})
-    try:
-        page = await SESSION.current_page()
-        data = await page.screenshot(full_page=full_page, type="png")
-        return Image(data=data, format="png")
-    except Exception as exc:  # noqa: BLE001
-        AUDIT.record_error("screenshot", {"full_page": full_page}, str(exc))
-        # Raising ToolError gives the model the real reason; a blank image
-        # would hide it.
-        raise ToolError(_friendly_error(exc)) from exc
+    for attempt in range(2):
+        try:
+            page = await SESSION.current_page()
+            data = await page.screenshot(full_page=full_page, type="png")
+            return Image(data=data, format="png")
+        except Exception as exc:  # noqa: BLE001
+            AUDIT.record_error("screenshot", {"full_page": full_page}, str(exc))
+            if attempt == 0:
+                await asyncio.sleep(0.5)
+                continue
+            raise ToolError(_friendly_error(exc)) from exc
 
 
 @tool()
