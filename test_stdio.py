@@ -57,7 +57,7 @@ async def main() -> int:
 
             tools = await session.list_tools()
             names = [t.name for t in tools.tools]
-            check("tools listed over stdio", len(names) == 25, f"{len(names)} tools")
+            check("tools listed over stdio", len(names) == 26, f"{len(names)} tools")
 
             expected = [
                 "open_url", "go_back", "go_forward", "reload",

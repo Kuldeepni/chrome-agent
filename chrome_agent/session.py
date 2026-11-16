@@ -490,20 +490,17 @@ class Session:
     # ------------------------------------------------------------------ #
 
     async def _on_dialog(self, dialog: Any) -> None:
-        # NOTE: async Playwright does not await async event handlers, so the
-        # dialog is auto-dismissed by Playwright (default = dismiss) before
-        # this coroutine runs. We therefore record the dialog and the policy
-        # that was in effect, but we cannot retroactively accept it.
-        # handle_dialog(accept=True) sets the policy for *future* dialogs; in
-        # practice, dialogs are auto-dismissed. This is a known limitation of
-        # the async Playwright API.
+        # Capture the policy at dialog-creation time, not at handler-run
+        # time. The handler is scheduled as a task and may run later, by
+        # which point dialog_policy could have changed.
+        policy = self.dialog_policy
         record = DialogRecord(
             type=dialog.type,
             message=dialog.message,
             default_value=dialog.default_value or "",
         )
         self.dialogs.append(record)
-        if self.dialog_policy is True:
+        if policy is True:
             record.handled_as = "accepted"
         else:
             record.handled_as = "dismissed"
